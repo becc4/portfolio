@@ -33,10 +33,55 @@ AB - At Bat
 H - Hits
 """
 query2a = '''
-SELECT b.playerID, b.yearID, (b.H / b.AB) as 'batting average'
+SELECT b.playerID, b.yearID, cast(b.H as real) / b.AB as 'batting average'
 FROM batting b
 WHERE b.AB >= 1
-GROUP BY b.playerID, b.yearID
-ORDER BY b.playerID, b.yearID
+ORDER BY cast(b.H as real) / b.AB desc, b.playerID
+LIMIT 5
 '''
 table2a = pd.read_sql_query(query2a,con)
+print("\n2a\n", table2a)
+
+query2b = '''
+SELECT b.playerID, b.yearID, cast(b.H as real) / b.AB as 'batting average'
+FROM batting b
+WHERE b.AB >= 10
+ORDER BY cast(b.H as real) / b.AB desc, b.playerID
+LIMIT 5
+'''
+table2b = pd.read_sql_query(query2b,con)
+print("\n2b\n", table2b)
+
+query2c = '''
+SELECT b.playerID, cast(SUM(b.H) as real) / SUM(b.AB) as 'batting average'
+FROM batting b
+GROUP BY b.playerID
+HAVING SUM(b.AB) >= 100
+ORDER BY cast(SUM(b.H) as real) / SUM(b.AB) desc, b.playerID
+LIMIT 5
+'''
+table2c = pd.read_sql_query(query2c,con)
+print("\n2c\n", table2c)
+
+query2cc = '''
+SELECT b.playerID, SUM(b.H), SUM(b.AB), 
+    cast(SUM(b.H) as real) / SUM(b.AB) as 'batting average'
+FROM batting b
+WHERE b.playerID = 'cobbty01'
+GROUP BY b.playerID
+'''
+table2cc = pd.read_sql_query(query2cc,con)
+print("\n2cc\n", table2cc)
+
+query3 = '''
+SELECT t.franchID, t.name, SUM(t.W), SUM(t.L)
+FROM teams t
+WHERE t.franchID = 'SEA' or t.franchID = 'TOR'
+GROUP BY t.name
+ORDER BY t.yearID
+'''
+table3 = pd.read_sql_query(query3,con)
+
+#table = pd.read_sql_query(dataframe_query,con)
+dataframe2 = pd.DataFrame(pd.read_sql_query(query3, con))
+print(dataframe2)
