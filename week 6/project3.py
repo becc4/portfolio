@@ -33,8 +33,10 @@ AB - At Bat
 H - Hits
 """
 query2a = '''
-SELECT playerID, yearID, (H / AB) as 'batting average'
-FROM batting
-WHERE AB >= 1
+SELECT b.playerID, b.yearID, (b.H / b.AB) as 'batting average'
+FROM batting b
+WHERE b.AB >= 1
+GROUP BY b.playerID, b.yearID
+ORDER BY b.playerID, b.yearID
 '''
 table2a = pd.read_sql_query(query2a,con)
