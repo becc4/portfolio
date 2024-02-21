@@ -1,0 +1,297 @@
+---
+title: "Client Report - Priject 1"
+subtitle: "Course DS 250"
+author: "Rebecca Roeth"
+format:
+  html:
+    self-contained: true
+    page-layout: full
+    title-block-banner: true
+    toc: true
+    toc-depth: 3
+    toc-location: body
+    number-sections: false
+    html-math-method: katex
+    code-fold: true
+    code-summary: "Show the code"
+    code-overflow: wrap
+    code-copy: hover
+    code-tools:
+        source: false
+        toggle: true
+        caption: See code
+execute: 
+  warning: false
+    
+---
+
+```{python}
+#| label: libraries
+#| include: false
+import pandas as pd
+import numpy as np
+import plotly.express as px
+```
+
+
+## Elevator Pitch
+I've noticed trends in names, some easily explainable and others not. For example, Aurora's name at the end only became popular after fifty-six years after the initial release of _Sleeping Beauty_. The data I have discovered reveals mindsets of parents and society throughout time.
+
+```{python}
+#| label: project data
+#| code-summary: Read and format project data
+# Include and execute your code here
+mpg = pd.read_csv("https://github.com/byuidatascience/data4names/raw/master/data-raw/names_year/names_year.csv")
+```
+
+__Highlight the Questions and Tasks__
+
+## Trends of my Own Name: Rebecca
+
+__How does your name at your birth year compare to its use historically?__
+Historically, the name "Rebecca" derives from the christian Rebekah. Comparing the useage of Rebecca to its alternative spellings, Rebecca ended up being the most popular significantly.
+```{python}
+spelling_bar = px.bar(mpg.query('name == "Rebekah" or name == "Rebecca" or name == "Rebecka" or name == "Rebeca" or name == "Rebeccah" or name == "Rebekka"'),
+    x = "name",
+    y = "Total",
+    color = "name"
+    )
+
+spelling_bar.show()
+
+spelling_line = px.line(mpg.query('name == "Rebekah" or name == "Rebecca" or name == "Rebecka" or name == "Rebeca" or name == "Rebeccah" or name == "Rebekka"'),
+    x = "year",
+    y = "Total",
+    color = "name"
+    )
+
+spelling_line.add_vline(
+    x=2003,
+    line_width= 3,
+    line_dash="dash",
+    annotation_text= "My Birth"
+    )
+
+spelling_line.show()
+```
+
+My name has been going down in popularity since the last solid peak in 1990. Rebecca has had dips and peaks before but not as significant as the first one and the name might fade out of fashion, no matter the spelling.
+
+## How Old is Brittany
+
+__If you talked to someone named Brittany on the phone, what is your guess of his or her age? What ages would you not guess?__
+```{python}
+brittany_line = px.line(mpg.query('name == "Brittany"'),
+    x = "year",
+    y = "Total",
+    title = "Uses of Brittany Throughout Time",
+    labels={"year": "Year",
+        "Total": "Total Uses of Name"},
+    )
+brittany_line.show()
+
+brittany_box = px.box(mpg.query('name == "Brittany"'),
+    y = "Total",
+    title = "Data on Brittany name Usage"
+    )
+brittany_box.show()
+```
+
+The initial graphs show that the name Brittany had a definitive peak in 1990. This shows that the name can be easily defined by time, that the name was most popular in a specific time. Also, the graph only starts at 1968 instead of 1910 when the data starts. That means, off the bat, we know that all Brittanys are between 56-0 years old.
+Additionally, the box plot show us the minimum, lower quartile, interquartile ranges, median, etc.
+
+Laying this information on top of the graph will give us a better idea of what is going on.
+```{python}
+brittany_line2 = px.line(mpg.query('name == "Brittany"'),
+    x = "year",
+    y = "Total",
+    title = "Uses of Brittany Throughout Time",
+    labels={"year": "Year",
+        "Total": "Total Uses of Name"},
+    )
+
+brittany_line2.add_hline(
+    y=6827,
+    line_width= 3,
+    line_dash="dash",
+    annotation_text= "Average Line"
+    )
+brittany_line2.add_hline(
+    y=1353,
+    line_width= 3,
+    line_dash="dash",
+    annotation_text= "Median Line"
+    )
+
+brittany_line2.add_hrect(
+    y0 = 27000,
+    y1 = 33000,
+    line_width=0,
+    fillcolor = "red",
+    opacity=0.2
+)
+brittany_line2.add_hrect(
+    y0 = 12000,
+    y1 = 27000,
+    line_width=0,
+    fillcolor = "orange",
+    opacity=0.2
+)
+brittany_line2.add_hrect(
+    y0 = 12000,
+    y1 = 1353,
+    line_width=0,
+    fillcolor = "yellow",
+    opacity=0.2
+)
+brittany_line2.add_hrect(
+    y0 = 1353,
+    y1 = 640,
+    line_width=0,
+    fillcolor = "green",
+    opacity=0.2
+)
+brittany_line2.add_hrect(
+    y0 = 640,
+    y1 = 5,
+    line_width=0,
+    fillcolor = "blue",
+    opacity=0.2
+)
+brittany_line2.add_hrect(
+    y0 = 5,
+    y1 = -100,
+    line_width=0,
+    fillcolor = "purple",
+    opacity=0.2
+)
+
+brittany_line2.show()
+```
+
+The graph shows that more than 50% of Brittanys were born between about 1984-1999 (40-24 years old at 2024) when using the average point to the upper quartile line.
+The upper 50-75% percentile of Brittanys were born 1985-1996 (39-27 at 2024) when using the upper interquartile range.
+The top 75%-100% were born in 1989-1991 (35-32 at 2024) when using the upperquartile range.
+
+_Conclusion_
+
+This means that, most likely, any Brittany I talk to will be 35-32 years old but that there is a 50% chance that Brittany is 40-24 compared to any other age for the past 114 years. There is a guarentee that Brittany is 56 years old or younger.
+
+## Biblical Name Trends
+
+__Mary, Martha, Peter, and Paul are all Christian names. From 1920 - 2000, compare the name usage of each of the four names. What trends do you notice?__
+The christian names were once popular, the name Mary most popular but dipping for a time in the 1930s-1940s but coming back. In fact, the beginning of the data shows they these names were not very popular and increased in useage in the 1910s. 
+```{python}
+christian = px.line(mpg.query('name == "Mary" or name == "Martha" or name == "Peter" or name == "Paul"'),
+    x = "year",
+    y = "Total",
+    color = "name",
+    title = "Uses of Christian Names by Year",
+    labels={"year": "Year",
+        "Total": "Total Uses of Name"},
+    )
+christian.show()
+```
+
+However, the names didn't stay in popularity. The last name to peak was Peter in 1956 as all the biblical names became less used. This could possibly be credited to their overuse and making those names reflect a specific time and age. People don't want to give their children "old" names.
+
+## Movie Name Trends
+
+__Think of a unique name from a famous movie. Plot the usage of that name and see how changes line up with the movie release. Does it look like the movie had an effect on usage?__
+
+_STAR WARS - Luke_
+
+While Luke is not a particularly unique name, even before the first _Star Wars_ movie came out. However, after the initial movie's release, the usage of "Luke" as a name became more popular.
+
+```{python}
+luke = px.line(mpg.query('name == "Luke"'),
+    x = "year",
+    y = "Total",
+    title = "Luke Trends by Release Dates of STAR WARS Movies",
+    labels={"year": "Year",
+            "Total": "Total Uses of Name"}
+    )
+
+luke.add_vline(
+    x=1977,
+    line_width= 3,
+    line_dash="dash",
+    line_color= "red",
+    annotation_text= "1977")
+
+luke.add_vline(
+    x=1980,
+    line_width= 3,
+    line_dash="dash",
+    line_color= "orange",
+    #annotation_text= "1980"
+    )
+
+luke.add_vline(
+    x=1983,
+    line_width= 3,
+    line_dash="dash",
+    line_color= "green",
+    annotation_text = "1983")
+
+luke.add_vline(
+    x=1999,
+    line_width= 3,
+    line_dash="dash",
+    line_color= "blue",
+    annotation_text= "1999")
+
+luke.add_vline(
+    x=2015,
+    line_width= 3,
+    line_dash="dash",
+    line_color= "purple",
+    annotation_text= "2015")
+
+luke.show()
+```
+
+While at the end of the initial three movies' run, the name "Luke" is not nearly as popular as it will be by the prequel's release, which didn't feature the character Luke. However, it is worth remembering that while _Star Wars_ was enjoyed by adults, it was also enjoyed by children who watched the movies but were not old enough to have and name children of their own. The name became more popular in 1992, fifteen years after the initial release, and steadily grew more popular over time. Fifteen years after the initial release would be about when the children who saw the movie would be having children of their own.
+
+_Disney_
+```{python}
+disney = px.line(mpg.query('name == "Flynn" or name == "Elsa" or name == "Ariel" or name == "Tiana"'),
+    x = "year",
+    y = "Total",
+    color = "name",
+    facet_col="name",
+    facet_col_wrap=2,
+    title = "Disney Names by Year",
+    labels={"year": "Year",
+        "Total": "Total Uses by Name"}
+    )
+disney.show()
+```
+Without even seeing the release date of the movies each character are in, someone could guess by the latest sharp upticks in the graph above.
+
+* Ariel, _Little Mermaid_ - 1989
+* Elsa, _Frozen_ - 2013
+* Flynn, _Tangled_ - 2010
+* Tiana, _Princess and the Frog_ - 2009
+```{python}
+aurora = px.line(mpg.query('name == "Aurora"'),
+    x = "year",
+    y = "Total",
+    color = "name",
+    title = "Aurora Name Popularity by Year",
+    labels={"year": "Year",
+        "Total": "Total Uses of Name"}
+    )
+
+aurora.add_vline(
+    x=1959,
+    line_width= 3,
+    line_dash="dash",
+    annotation_text= "Sleeping Beauty Release"
+    )
+aurora.show()
+```
+
+Aurora's name from Disney's _Sleeping Beauty_ is another story entirely. It started to become popular again after about forty years and continues to be popular after fifty-six years, a much larger difference than the above name Luke's popularity. Aurora's popularity can't be attributed to nostalgia or childhood interests because, by the time Aurora became popular again, the children who saw the movie when it first came out would no longer be able to have children themselves. 
+
+_Sleeping Beauty_ is, however, considered a Disney classic and is enjoyed today as much as it was when it was released, connecting generations. This trend is not seen in other Disney classic characters like Cinderella. However, this begs the question of why did Aurora interest so many children of that certain time frame, and what time frame is it exactly?

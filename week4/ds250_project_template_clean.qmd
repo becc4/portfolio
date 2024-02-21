@@ -1,0 +1,299 @@
+---
+title: "Client Report - Project 2: Late flights and missing data"
+subtitle: "Course DS 250"
+author: "Rebecca Roeth"
+format:
+  html:
+    self-contained: true
+    page-layout: full
+    title-block-banner: true
+    toc: true
+    toc-depth: 3
+    toc-location: body
+    number-sections: false
+    html-math-method: katex
+    code-fold: true
+    code-summary: "Show the code"
+    code-overflow: wrap
+    code-copy: hover
+    code-tools:
+        source: false
+        toggle: true
+        caption: See code
+execute: 
+  warning: false
+    
+---
+
+```{python}
+#| label: libraries
+#| include: false
+import pandas as pd
+import numpy as np
+import plotly.express as px
+```
+
+
+## Elevator pitch
+
+The data frame called __flights_missing__ has missing data but also does not record the ratio of total flights delayed to every other piece of information, making the data biased and needing fixing in order to be understood in context. 
+
+```{python}
+#| label: project data
+#| code-summary: Read and format project data
+# url = "https://github.com/byuidatascience/data4missing/raw/master/data-raw/flights_missing/flights_missing.json"
+file = open("./flights_missing.json")
+data = pd.read_json(file)
+file.close()
+```
+
+
+## Missing Data
+
+__Fix all of the varied missing data types in the data to be consistent (all missing values should be displayed as “NaN”).__
+
+The missing data came in all kinds of forms. For example, missing airport names appeared blank or as "" while number of delays for late aircraft were represented as -999.
+
+```{python}
+print(data.query('airport_name == ""').filter(["airport_name", "num_of_delays_late_aircraft", "month"]).head())
+print(data.query('num_of_delays_late_aircraft == -999').filter(["airport_name", "num_of_delays_late_aircraft", "month"]).head())
+print(data.query('month == "n/a"').filter(["airport_name", "num_of_delays_late_aircraft", "month"]).head())
+```
+
+Using the .replace function, I was able to select the column of each missing value, select the missing value by its name, and change it to NaN.
+
+```{python}
+#| label: Q1
+#| code-summary: Read and format data
+# Include and execute your code here
+
+data.airport_name = data.airport_name.replace({"": "NaN"})
+data.num_of_delays_late_aircraft = data.num_of_delays_late_aircraft.replace({-999: "NaN"})
+data.month = data.month.replace({"n/a": "NaN"})
+
+print(data.filter(["airport_name", 
+"num_of_delays_late_aircraft", "month"]).head())
+```
+
+## Worst airport
+
+__Which airport has the worst delays?__
+
+Initially, I compared all the airports by how many delays they had total (num_of_delays_total variable). However, this ignores how the airports who make more flights will inheritly make more delays.
+
+```{python}
+delay1 = px.box(data,
+    x = "airport_code",
+    y = "num_of_delays_total",
+    color = "airport_code",
+    title = "Boxplot of Total Delays at Airports",
+    labels= {
+        "airport_code":"Airport Code",
+        "num_of_delays_total":"Total Delays"
+    }
+)
+delay1.show()
+
+total_flights = px.bar(data,
+    x = "airport_code",
+    y = "num_of_flights_total",
+    color = "airport_code",
+    title = "Boxplot of Total Flights at Airports",
+    labels= {
+        "airport_code":"Airport Code",
+        "num_of_flights_total":"Total Flights"
+    }
+)
+total_flights.show()
+```
+
+The above figure shows little to no difference in how many flights were delayed and how many flights were taken total. However, by creating a new column that divided the number of delays by the number of flights, we could find out which airport has more delays proportionately.
+
+```{python}
+data = data.assign(num_of_delays_total_ratio = lambda x: x.num_of_delays_total / x.num_of_flights_total)
+
+delay2 = px.box(data,
+    x = "airport_code",
+    y = "num_of_delays_total_ratio",
+    color = "airport_code",
+    title = "Boxplot of delays at Airports by total flights",
+    labels= {
+        "airport_code":"Airport Code",
+        "num_of_delays_total_ratio":"Total Delays by Total Flights Ratio"
+    }
+)
+
+delay2.show()
+```
+
+By using a boxplot, we know how many delays they have on average. With this information we know that __San Francisco International__ has the most delays for each flight.
+
+_However_, the question of who has the worst delays still stands. We know who has the most delays, but how long are each delay? 
+
+Again, I have to create a ratio column of total flights to total minutes delayed because the total minutes will be a sum of each delayed flight. I have to find out what is the _average delay for each flight_.
+
+```{python}
+data = data.assign(minutes_delayed_total_ratio = lambda x: x.minutes_delayed_total / x.num_of_flights_total)
+
+time_delay = px.box(data,
+    x = "airport_code",
+    y = "minutes_delayed_total_ratio",
+    color = "airport_code",
+    title = "Boxplot of Minutes Delayed",
+    labels= {
+        "airport_code":"Airport Code",
+        "minutes_delayed_total_ratio":"Minutes Delayed per Flight"
+    }
+)
+time_delay.show()
+
+data = data.assign(hours_delayed_total_ratio = lambda x: (x.minutes_delayed_total / x.num_of_flights_total) / 60)
+
+time_delay2 = px.box(data,
+    x = "airport_code",
+    y = "hours_delayed_total_ratio",
+    color = "airport_code",
+    title = "Boxplot of Hours Delayed",
+    labels= {
+        "airport_code":"Airport Code",
+        "hours_delayed_total_ratio":"Hours Delayed per Flight"
+    }
+)
+time_delay2.show()
+```
+
+
+## Months to Fly
+
+__What is the best month to fly if you want to avoid delays of any length?__
+
+We have to figure out not just the length of delays during the month, but how common they are. I have used the new num_of_delays_total_ratio variable (Delays per flight) and put that with the length of delays to show how likely each kind of delay is for how many flights there are.
+
+Each graph is read left to right, smaller delays to larger delays, and then up and down to determine the likelihood of such a delay. The graphs are organized by month.
+
+```{python}
+months = px.histogram(data.query('month != "NaN"'),
+    x = "minutes_delayed_total_ratio",
+    y = "num_of_delays_total_ratio",
+    facet_col="month",
+    facet_col_wrap=4,
+    color = "month",
+    title = "Boxplot of Total Delays at Airports",
+    labels= {
+        "minutes_delayed_total_ratio":"Minutes Delayed",
+        "month": "Months",
+        "num_of_delays_total_ratio":"Delays per Flight"
+    }
+)
+months.show()
+```
+
+However, if we were to figure out what each delay looked like for each airport, we would create another section for airport code.
+
+```{python}
+months2 = px.histogram(data.query('month != "NaN"'),
+    x = "minutes_delayed_total_ratio",
+    y = "num_of_delays_total_ratio",
+    facet_col="month",
+    facet_row="airport_code",
+    color = "airport_code",
+    title = "Boxplot of Total Delays at Each Airport",
+    labels= {
+        "minutes_delayed_total_ratio":"",
+        "month": "Months",
+        "num_of_delays_total_ratio":"",
+        "airport_code": "Airport Code"
+    }
+)
+months2.show()
+```
+
+With this, we know that San Francisco International's has the worst delays (high likelihood and large minute delay) in December.
+
+## Mild and Severe Weather
+__Create a new column that calculates the total number of flights delayed by weather (both severe and mild)__
+
+I wanted to make/keep columns for severe and mild weather so I started by renaming the current weather column to severe weather, since it only had information for severe weather.
+
+```{python}
+data.rename(columns={"num_of_delays_weather": "num_of_delays_severe_weather"}, inplace=True)
+print(data.filter(["num_of_delays_severe_weather"]).head())
+
+```
+
+The next part is trickier. We know that 30% of 30% of all delayed flights in the Late-Arriving category are due to mild weather and that 40% of delayed flights in the NAS category are due to mild weather in April to August but that percentage increases to 65% for the rest of the months.
+
+The equation is this:
+__mild = late_arriving*0.3 + (NAS*0.4 if April-August or NAS*0.65)__
+
+Then there is accounting for the fact that the late_arriving category has null inputs that cannot be added.
+
+The new equation is this:
+__mild = if late_arriving != Null(late_arriving*0.3 +) (NAS*0.4 or 0.65)__
+
+```{python}
+def mw_calc(x): 
+    if x.num_of_delays_late_aircraft == "NaN":
+        if x.month in ["April", "May", "June", "July", "August"]:
+            return x.num_of_delays_nas * 0.4 
+        else:
+            return x.num_of_delays_nas * 0.65
+    else:
+        if x.month in ["April", "May", "June", "July", "August"]:
+            return x.num_of_delays_nas * 0.4 + x.num_of_delays_late_aircraft * 0.3
+        else:
+            return x.num_of_delays_nas * 0.65 + x.num_of_delays_late_aircraft * 0.3
+
+data["num_of_delays_mild_weather"] = data.apply(mw_calc, axis=1)
+data = data.assign(num_of_delays_total_weather = lambda x: x.num_of_delays_mild_weather + x.num_of_delays_severe_weather)
+data["num_of_delays_late_aircraft"] = data.apply(lambda x: (x.num_of_delays_mild_weather + x.num_of_delays_severe_weather) / 2 if x.num_of_delays_late_aircraft == "NaN" else x.num_of_delays_late_aircraft, axis=1)
+
+print(data.filter(["airport_code", "num_of_delays_total_weather", "num_of_delays_mild_weather", "num_of_delays_severe_weather", "num_of_delays_late_aircraft"]).head())
+```
+## Graphing Weather
+
+__Using the new weather variable calculated above, create a barplot showing the proportion of all flights that are delayed by weather at each airport. Discuss what you learn from this graph.__
+
+```{python}
+data = data.assign(num_of_delays_total_weather_proportion = lambda x: x.num_of_delays_total_weather / x.num_of_flights_total)
+
+weather_graph1 = px.bar(data,
+    x = "airport_code",
+    y = "num_of_delays_total_weather_proportion",
+    color = "airport_code",
+    title = "Airport Delays by Total Weather per Flight",
+    labels= {
+        "num_of_delays_total_weather_proportion": "Delays by Total Weather per Flight",
+        "airport_code": "Airport Code"
+    }
+)
+weather_graph1.show()
+
+weather_graph2 = px.bar(data,
+    x = "airport_code",
+    y = "num_of_delays_total_weather",
+    color = "airport_code",
+    title = "Airport Delays by Total Weather",
+    labels= {
+        "num_of_delays_total_weather": "Delays by Total Weather",
+        "airport_code": "Airport Code"
+    }
+)
+weather_graph2.show()
+```
+
+Proportionately, __San Francisco International__ has the most weather-induced delays.
+That begins to ask is that how most of their delays are made?
+```{python}
+print("Mean: ")
+print(data.query('airport_code == "SFO"').filter(["num_of_delays_total_weather", "num_of_delays_total"]).mean())
+print("\nMedian: ")
+print(data.query('airport_code == "SFO"').filter(["num_of_delays_total_weather", "num_of_delays_total"]).median())
+
+weather_median = 1142.05
+total_median = 3143.50
+
+print("\nRatio:")
+print(f"{round(((weather_median / total_median) * 100), 2)}% of delays in SFO are caused by Weather")
+
+```
