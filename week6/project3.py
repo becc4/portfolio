@@ -1,4 +1,4 @@
-import pandas as pd 
+import pandas as pd
 import numpy as np
 import sqlite3
 
@@ -64,7 +64,7 @@ table2c = pd.read_sql_query(query2c,con)
 print("\n2c\n", table2c)
 
 query2cc = '''
-SELECT b.playerID, SUM(b.H), SUM(b.AB), 
+SELECT b.playerID, SUM(b.H), SUM(b.AB),
     cast(SUM(b.H) as real) / SUM(b.AB) as 'batting average'
 FROM batting b
 WHERE b.playerID = 'cobbty01'
@@ -84,4 +84,4 @@ table3 = pd.read_sql_query(query3,con)
 
 #table = pd.read_sql_query(dataframe_query,con)
 dataframe2 = pd.DataFrame(pd.read_sql_query(query3, con))
-print(dataframe2)
+print("\n3\n", dataframe2)
