@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import sqlite3
+import plotly.express as px
 
 # careful to list your path to the file or save it in the same place as your .qmd or .py file
 sqlite_file = 'lahmansbaseballdb.sqlite'
@@ -28,7 +29,7 @@ print(dataframe)
 # Write an SQL query that provides playerID, yearID, and batting average for players with at least 1 at bat that year.
 # batting average = hits / at-bats
 """
-Key
+Key:
 AB - At Bat
 H - Hits
 """
@@ -40,7 +41,7 @@ ORDER BY cast(b.H as real) / b.AB desc, b.playerID
 LIMIT 5
 '''
 table2a = pd.read_sql_query(query2a,con)
-print("\n2a\n", table2a)
+print(table2a)
 
 query2b = '''
 SELECT b.playerID, b.yearID, cast(b.H as real) / b.AB as 'batting average'
@@ -63,12 +64,15 @@ LIMIT 5
 table2c = pd.read_sql_query(query2c,con)
 print("\n2c\n", table2c)
 
+sqlite_file = 'lahmansbaseballdb.sqlite'
+con = sqlite3.connect(sqlite_file)
+
 query2cc = '''
 SELECT b.playerID, SUM(b.H), SUM(b.AB),
     cast(SUM(b.H) as real) / SUM(b.AB) as 'batting average'
 FROM batting b
-WHERE b.playerID = 'cobbty01'
-GROUP BY b.playerID
+WHERE b.playerID = 'addybo01'
+LIMIT 2
 '''
 table2cc = pd.read_sql_query(query2cc,con)
 print("\n2cc\n", table2cc)

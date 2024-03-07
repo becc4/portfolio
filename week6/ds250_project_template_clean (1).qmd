@@ -1,0 +1,182 @@
+---
+title: "Client Report - Project 3: Finding relationships in baseball."
+subtitle: "Course DS 250"
+author: "Rebecca Roeth"
+format:
+  html:
+    self-contained: true
+    page-layout: full
+    title-block-banner: true
+    toc: true
+    toc-depth: 3
+    toc-location: body
+    number-sections: false
+    html-math-method: katex
+    code-fold: true
+    code-summary: "Show the code"
+    code-overflow: wrap
+    code-copy: hover
+    code-tools:
+        source: false
+        toggle: true
+        caption: See code
+execute: 
+  warning: false
+    
+---
+
+```{python}
+#| label: libraries
+#| include: false
+import pandas as pd
+import numpy as np
+import plotly.express as px
+import sqlite3
+import plotly.express as px
+```
+
+
+## Elevator pitch
+
+While it may seem like the player with the ID cobbty01 may have the highest batting score and that the Toronto Blue Jays are better than the Seattle Mariners, data can be manipulated to not show the full picture. In truth, there is no full picture because no matter how lahmansbaseballdb sql library is used, there is always bias.
+
+```{python}
+# Include and execute your code here
+sqlite_file = 'lahmansbaseballdb.sqlite'
+con = sqlite3.connect(sqlite_file)
+```
+
+__Highlight the Questions and Tasks__
+
+## BYU-Idaho Baseball Players
+
+__Write an SQL query to create a new dataframe about baseball players who attended BYU-Idaho. The new table should contain five columns: playerID, schoolID, salary, and the yearID/teamID associated with each salary. Order the table by salary (highest to lowest) and print out the table in your report.__
+
+The only BYU-Idaho allumnis are the players witht he playerIDs lindsma01 and stephga01
+
+```{python}
+#| label: Q1
+#| code-summary: Read and format data
+# Include and execute your code here
+dataframe_query = '''
+SELECT cp.playerID, cp.schoolID, sal.salary, cp.yearID, sal.team_ID
+FROM collegeplaying cp
+INNER JOIN salaries sal
+ON sal.playerID = cp.playerID
+WHERE cp.schoolID = 'idbyuid'
+ORDER BY sal.salary desc
+'''
+table = pd.read_sql_query(dataframe_query,con)
+
+dataframe = pd.DataFrame(pd.read_sql_query(dataframe_query, con))
+print(dataframe)
+```
+
+lindsa01 had a high salary of 4 million dollars in 2001 and 2002 while stephga01's high salary was $1,025,000 also in 2001 and 2002.
+
+
+## 1 At Bat
+
+__Write an SQL query that provides playerID, yearID, and batting average for players with at least 1 at bat that year. Sort the table from highest batting average to lowest, and then by playerid alphabetically. Show the top 5 results in your report.__
+
+When you require only 1 at bat for your data, you will get more 1.0 batting averages. While these seem like the best batting average possible and thus the batters are the best batters in the league, this is probably due to the fact that they have 1/1 batting ratios of battings hit and have only hit once.
+
+This is how statistics are subjective and unreliable. Too many players have a perfect batting average with this information to come to a conclusion of who is a better player.
+
+```{python}
+"""
+Key:
+AB - At Bat
+H - Hits
+"""
+query2a = '''
+SELECT b.playerID, b.yearID, cast(b.H as real) / b.AB as 'batting average'
+FROM batting b
+WHERE b.AB >= 1
+ORDER BY cast(b.H as real) / b.AB desc, b.playerID
+LIMIT 5
+'''
+table2a = pd.read_sql_query(query2a,con)
+print(table2a)
+```
+
+
+## 10 at Bat
+
+__Use the same query as above, but only include players with at least 10 at bats that year. Print the top 5 results.__
+
+The average is lower which makes this set of data more reliable to figure out who is the best player with a high batting average and what their best year was.
+However, again, the data is incomplete.
+
+With this information, the player with the ID nymanny01 is the best player with a batting average of 0.642857 in 1974.
+
+```{python}
+query2b = '''
+SELECT b.playerID, b.yearID, cast(b.H as real) / b.AB as 'batting average'
+FROM batting b
+WHERE b.AB >= 10
+ORDER BY cast(b.H as real) / b.AB desc, b.playerID
+LIMIT 5
+'''
+table2b = pd.read_sql_query(query2b,con)
+print("\n2b\n", table2b)
+```
+
+## 100 at Bat
+
+__Now calculate the batting average for players over their entire careers (all years combined). Only include players with at least 100 at bats, and print the top 5 results.__
+
+This data set has the most reliable information about the batting average as it takes the score over each player's lifetimes, only including players who have been at bat 100+ times and are thus more experienced.
+
+With this information, player cobbty01 is the best player with a 0.366299 batting average.
+
+However, this data is still biased as it doesn't include other information to consider who is the best batter, let alone best player.
+
+```{python}
+query2c = '''
+SELECT b.playerID, cast(SUM(b.H) as real) / SUM(b.AB) as 'batting average'
+FROM batting b
+GROUP BY b.playerID
+HAVING SUM(b.AB) >= 100
+ORDER BY cast(SUM(b.H) as real) / SUM(b.AB) desc, b.playerID
+LIMIT 5
+'''
+table2c = pd.read_sql_query(query2c,con)
+print("\n2c\n", table2c)
+```
+
+## Mariners vs. Blue Jays
+__Pick any two baseball teams and compare them using a metric of your choice (average salary, home runs, number of wins, etc). Write an SQL query to get the data you need, then make a graph using Plotly Express to visualize the comparison. What do you learn?__
+
+I chose to compare the two teams' winning and losing totals. Under this criteria, the Toronto Blue Jays beat the Seattle Mariners by having more wins and less loses.
+
+```{python}
+query3 = '''
+SELECT t.franchID, t.name, SUM(t.W), SUM(t.L)
+FROM teams t
+WHERE t.franchID = 'SEA' or t.franchID = 'TOR'
+GROUP BY t.name
+ORDER BY t.yearID
+'''
+table3 = pd.read_sql_query(query3,con)
+
+#table = pd.read_sql_query(dataframe_query,con)
+dataframe2 = pd.DataFrame(pd.read_sql_query(query3, con))
+print(dataframe2)
+```
+
+However, this is also not a fair way of comparing the teams because the Seattle Mariners may have less wins and loses but they also played more games by almost 200, which is at least a bigger difference between the two teams' wins, if not the loses.
+
+```{python}
+graph3 = px.bar(dataframe2,
+    x = "name",
+    y = "SUM(t.W)" and "SUM(t.L)",
+    title = "Bar Graph of Total Games",
+    labels= {
+        "name": "Name",
+        "SUM(t.L)": "Total Games"
+    }
+)
+
+graph3.show()
+```
