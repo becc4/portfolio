@@ -1,0 +1,269 @@
+---
+title: "Client Report - The War with Star Wars"
+subtitle: "Course DS 250"
+author: "Rebecca Roeth"
+format:
+  html:
+    self-contained: true
+    page-layout: full
+    title-block-banner: true
+    toc: true
+    toc-depth: 3
+    toc-location: body
+    number-sections: false
+    html-math-method: katex
+    code-fold: true
+    code-summary: "Show the code"
+    code-overflow: wrap
+    code-copy: hover
+    code-tools:
+        source: false
+        toggle: true
+        caption: See code
+execute: 
+  warning: false
+    
+---
+
+```{python}
+#| label: libraries
+#| include: false
+import pandas as pd
+import numpy as np
+import plotly.express as px
+```
+
+
+## Elevator pitch
+
+_paste your elevator pitch here_
+_A SHORT (4-5 SENTENCES) PARAGRAPH THAT `DESCRIBES KEY INSIGHTS` TAKEN FROM METRICS IN THE PROJECT RESULTS THINK TOP OR MOST IMPORTANT RESULTS._
+
+```{python}
+#| label: project-data
+#| code-summary: Read and format project data
+
+# Learn morea about Code Cells: https://quarto.org/docs/reference/cells/cells-jupyter.html
+
+# Include and execute your code here
+url = "https://raw.githubusercontent.com/fivethirtyeight/data/master/star-wars-survey/StarWars.csv"
+data = pd.read_csv(url, encoding='unicode_escape')
+```
+
+__Highlight the Questions and Tasks__
+
+## QUESTION|TASK 1
+
+__COPY PASTE QUESTION|TASK 1 FROM THE PROJECT HERE__
+
+_type your results and analysis here_
+
+```{python}
+data.rename(columns = {
+    'Have you seen any of the 6 films in the Star Wars franchise?': 'Seen_SW',
+    'Do you consider yourself to be a fan of the Star Wars film franchise?': 'Fan_of_SW',
+    'Which character shot first?':'shot_first',
+    'Are you familiar with the Expanded Universe?':'familair_EU',
+    'Do you consider yourself to be a fan of the Expanded Universe?':'fan_EU',
+    'Do you consider yourself to be a fan of the Star Trek franchise?':'ST_fan',
+    'Household Income':'Income',
+    
+    #Context clues said these are the Star wars movies of the original and newest trilogies
+    'Which of the following Star Wars films have you seen? Please select all that apply.':'SW1',
+    'Unnamed: 4': 'SW2',
+    'Unnamed: 5': 'SW3',
+    'Unnamed: 6': 'SW4',
+    'Unnamed: 7': 'SW5',
+    'Unnamed: 8': 'SW6',
+
+    'Please rank the Star Wars films in order of preference with 1 being your favorite film in the franchise and 6 being your least favorite film.':'SW1_ranked',
+    'Unnamed: 10': 'SW2_ranked',
+    'Unnamed: 11': 'SW3_ranked',
+    'Unnamed: 12': 'SW4_ranked',
+    'Unnamed: 13': 'SW5_ranked',
+    'Unnamed: 14': 'SW6_ranked',
+
+#Jar Jar Binks,Padme Amidala,Yoda,
+
+    'Please state whether you view the following characters favorably, unfavorably, or are unfamiliar with him/her.': 'Han_Solo',
+    'Unnamed: 16': 'Luke_Skywalker',
+    'Unnamed: 17': 'Princes_Leia',
+    'Unnamed: 18': 'Anakin',
+    'Unnamed: 19': 'Obi Wan',
+    'Unnamed: 20': 'Palpatine',
+    'Unnamed: 21': 'Darth_Vadar',
+    'Unnamed: 22': 'Lando_Calrissian',
+    'Unnamed: 23': 'Boba_Fett',
+    'Unnamed: 24': 'C-3PO',
+    'Unnamed: 25': 'R2_D2',
+    'Unnamed: 26': 'Jar_Jar_Binks',
+    'Unnamed: 27': 'Padme_Amidala',
+    'Unnamed: 28': 'Yoda'
+
+}, inplace = True)
+
+print(data.info())
+
+```
+
+## QUESTION|TASK 2
+
+__COPY PASTE QUESTION|TASK 2 FROM THE PROJECT HERE__
+
+_type your results and analysis here_
+
+_Part A_
+___Filter the dataset to respondents that have seen at least one film.__
+```{python}
+data = data.query('Seen_SW == "Yes"')
+print(data.filter(["Seen_SW"]).head())
+```
+
+_Part B_
+__Create a new column that converts the age ranges to a single number. Drop the age range categorical column.__
+```{python}
+def split_age(i):
+    age_list = str(i.Age).split("-")
+    if age_list[0] == "> 60":
+        return 61
+    elif age_list[0] == "NaN":
+        return 0
+    return float(age_list[0])
+
+data['Age'] = data['Age'].fillna(0)
+data["age_range"] = data.apply(split_age, axis=1)
+del data['Age']
+
+print(data.filter(["age_range"]))
+```
+
+_Part C_
+__Create a new column that converts the education groupings to a single number. Drop the school categorical column__
+
+```{python}
+def split_education(i):
+    i = i.Education
+    if i == "High school degree":
+        return 1.0
+    elif i == "Some college or Associate degree":
+        return 2.0
+    elif i == "Bachelor degree":
+        return 3.0
+    elif i == "Graduate degree":
+        return 4.0
+data["education"] = data.apply(split_education, axis=1)
+data['education'] = data['education'].fillna(0)
+del data['Education']
+print(data.filter(["education"]))
+```
+
+_Part D_
+__Create a new column that converts the income ranges to a single number. Drop the income range categorical column.__
+```{python}
+def split_income(i):
+    income_list = str(i.Income).split(" - ")
+    if income_list[0] == "$0":
+        return 1
+    elif income_list[0] == "$25,000":
+        return 2
+    elif income_list[0] == "$50,000":
+        return 4
+    elif income_list[0] == "$100,000":
+        return 8
+    elif income_list[0] == "$150,000+":
+        return 12
+    else: # NaN
+        return 0
+    
+data["Income_range"] = data.apply(split_income, axis=1)
+del data['Income']
+print(data.filter(["Income_range"]))
+```
+
+_Part E_
+__Create your target (also known as “y” or “label”) column based on the new income range column.__
+```{python}
+data['label'] = data.apply(lambda _: '', axis=1)
+```
+
+_Part F_
+__One-hot encode all remaining categorical columns.__
+```{python}
+from sklearn.preprocessing import OneHotEncoder 
+category_list = [
+  'SW1','SW2','SW3','SW4','SW5','SW6','SW1_ranked','SW2_ranked','SW3_ranked','SW4_ranked','SW5_ranked','SW6_ranked',
+
+  'Luke_Skywalker','Princes_Leia','Anakin','Obi Wan','Palpatine','Darth_Vadar','Lando_Calrissian',
+  'Boba_Fett','C-3PO','R2_D2','Jar_Jar_Binks','Padme_Amidala','Yoda', 
+
+  'Seen_SW','Fan_of_SW','shot_first','familair_EU','ST_fan',
+  'Gender','Location (Census Region)',
+]
+enc = OneHotEncoder() 
+enc_data = 0
+for i in category_list:
+    data[(i)] = data[(i)].astype('category').cat.codes
+
+    enc_data += pd.DataFrame(enc.fit_transform(data[[i]]).toarray())
+
+New_df = data.join(enc_data) 
+print(New_df.info()) 
+```
+
+## QUESTION|TASK 3
+
+__Validate that the data provided on GitHub lines up with the article by recreating 2 of the visuals from the article.__
+
+_type your results and analysis here_
+
+```{python}
+movies = ['SW1','SW2','SW3','SW4','SW5','SW6']
+for i in movies:
+  graph = px.histogram(data,
+    x= i,
+    color = i,
+    )
+  graph.show()
+
+movies_ranked = ['SW2_ranked','SW3_ranked','SW4_ranked','SW5_ranked','SW6_ranked']
+for i in movies_ranked:
+    graph = px.pie(data,
+       values = i,
+       names= i,
+       color = i,
+       )
+    graph.show()
+```
+
+_include figures in chunks and discuss your findings in the figure._
+
+```{python}
+#| label: Q3-chart
+#| code-summary: plot example
+#| fig-cap: "My useless chart"
+#| fig-align: center
+# Include and execute your code here
+# chart = px.bar(df.head(200),
+#     x="name", 
+#     y="AK"
+# )
+# chart.show()
+```
+
+
+```{python}
+#| label: Q3-table
+#| code-summary: table example
+#| tbl-cap: "Not much of a table"
+#| tbl-cap-location: top
+# Include and execute your code here
+# mydat = df.head(1000)\
+#     .groupby('year')\
+#     .sum()\
+#     .reset_index()\
+#     .tail(10)\
+#     .filter(["year", "AK","AR"])
+
+# display(mydat)
+
+```
