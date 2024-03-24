@@ -36,8 +36,7 @@ import plotly.express as px
 
 ## Elevator pitch
 
-_paste your elevator pitch here_
-_A SHORT (4-5 SENTENCES) PARAGRAPH THAT `DESCRIBES KEY INSIGHTS` TAKEN FROM METRICS IN THE PROJECT RESULTS THINK TOP OR MOST IMPORTANT RESULTS._
+While the dataset is fun, there is very few pieces of information that can actually be used for the final question 4 where I will be creating a ML model to predict if someone makes $50k or more. Additionally, the category I use "Household Income" is a vague target for what I want to find out. However, by making the dataset more readable, I was able to figure out what was useable and other facinating information about the dataset.
 
 ```{python}
 #| label: project-data
@@ -52,11 +51,9 @@ data = pd.read_csv(url, encoding='unicode_escape')
 
 __Highlight the Questions and Tasks__
 
-## QUESTION|TASK 1
+## Clean Up
 
-__COPY PASTE QUESTION|TASK 1 FROM THE PROJECT HERE__
-
-_type your results and analysis here_
+__Shorten the column names and clean them up for easier use with pandas. Provide a table or list that exemplifies how you fixed the names.__
 
 ```{python}
 data.rename(columns = {
@@ -106,20 +103,21 @@ print(data.info())
 
 ```
 
-## QUESTION|TASK 2
+## Formating
 
-__COPY PASTE QUESTION|TASK 2 FROM THE PROJECT HERE__
+__Clean and format the data so that it can be used in a machine learning model. As you format the data, you should complete each item listed below__
 
-_type your results and analysis here_
 
 _Part A_
-___Filter the dataset to respondents that have seen at least one film.__
+
+__Filter the dataset to respondents that have seen at least one film.__
 ```{python}
 data = data.query('Seen_SW == "Yes"')
 print(data.filter(["Seen_SW"]).head())
 ```
 
 _Part B_
+
 __Create a new column that converts the age ranges to a single number. Drop the age range categorical column.__
 ```{python}
 def split_age(i):
@@ -138,6 +136,7 @@ print(data.filter(["age_range"]))
 ```
 
 _Part C_
+
 __Create a new column that converts the education groupings to a single number. Drop the school categorical column__
 
 ```{python}
@@ -158,6 +157,7 @@ print(data.filter(["education"]))
 ```
 
 _Part D_
+
 __Create a new column that converts the income ranges to a single number. Drop the income range categorical column.__
 ```{python}
 def split_income(i):
@@ -181,22 +181,30 @@ print(data.filter(["Income_range"]))
 ```
 
 _Part E_
+
 __Create your target (also known as “y” or “label”) column based on the new income range column.__
 ```{python}
-data['label'] = data.apply(lambda _: '', axis=1)
+def label_function(i):
+    if i.Income_range >= 4:
+        return True
+    else: 
+        return False
+data['y'] = data.apply(label_function, axis=1)
 ```
 
 _Part F_
+
 __One-hot encode all remaining categorical columns.__
+
 ```{python}
 from sklearn.preprocessing import OneHotEncoder 
 category_list = [
-  'SW1','SW2','SW3','SW4','SW5','SW6','SW1_ranked','SW2_ranked','SW3_ranked','SW4_ranked','SW5_ranked','SW6_ranked',
+  'SW1','SW2','SW3','SW4','SW5','SW6',#'SW1_ranked','SW2_ranked','SW3_ranked','SW4_ranked','SW5_ranked','SW6_ranked',
 
   'Luke_Skywalker','Princes_Leia','Anakin','Obi Wan','Palpatine','Darth_Vadar','Lando_Calrissian',
   'Boba_Fett','C-3PO','R2_D2','Jar_Jar_Binks','Padme_Amidala','Yoda', 
 
-  'Seen_SW','Fan_of_SW','shot_first','familair_EU','ST_fan',
+  'Seen_SW','Fan_of_SW','familair_EU','ST_fan',
   'Gender','Location (Census Region)',
 ]
 enc = OneHotEncoder() 
@@ -206,64 +214,90 @@ for i in category_list:
 
     enc_data += pd.DataFrame(enc.fit_transform(data[[i]]).toarray())
 
-New_df = data.join(enc_data) 
-print(New_df.info()) 
+data = data.join(enc_data) 
+print(data.info()) 
 ```
 
-## QUESTION|TASK 3
+## Graphs and articles
 
 __Validate that the data provided on GitHub lines up with the article by recreating 2 of the visuals from the article.__
 
-_type your results and analysis here_
+_https://fivethirtyeight.com/features/americas-favorite-star-wars-movies-and-least-favorite-characters/_
 
 ```{python}
-movies = ['SW1','SW2','SW3','SW4','SW5','SW6']
-for i in movies:
-  graph = px.histogram(data,
-    x= i,
-    color = i,
+movies_ranked = ['SW1_ranked','SW2_ranked','SW3_ranked','SW4_ranked','SW5_ranked','SW6_ranked']
+seen_all = data.query('SW1 == 0 and SW2 == 0 and SW3 == 0 and SW4 == 0 and SW5 == 0 and SW6 == 0')
+#print(seen_all.filter(['SW1_ranked','SW2_ranked','SW3_ranked','SW4_ranked','SW5_ranked','SW6_ranked']).head())
+
+def SW_Movie_Seen(i):
+# Which of the following Star Wars films have you seen?
+    if i.SW1_ranked == "1":
+        return "SW1"
+    elif i.SW2_ranked == "1":
+        return "SW2"
+    elif i.SW3_ranked == "1":
+        return "SW3"    
+    elif i.SW4_ranked == "1":
+        return "SW4"    
+    elif i.SW5_ranked == "1":
+        return "SW5"
+    elif i.SW6_ranked == "1":
+        return 'SW6'
+
+seen_all["SW_ranked"] = seen_all.apply(SW_Movie_Seen, axis=1)
+#print(New_df.filter(["SW_ranked"]))
+
+chart = px.histogram(seen_all,
+    y = "SW_ranked",
+    category_orders=dict(SW_ranked=['SW1','SW2','SW3','SW4','SW5','SW6']),
+    title = "Which 'Star Wars' Movies Have You Seen?"
     )
-  graph.show()
+chart.show()
 
-movies_ranked = ['SW2_ranked','SW3_ranked','SW4_ranked','SW5_ranked','SW6_ranked']
-for i in movies_ranked:
-    graph = px.pie(data,
-       values = i,
-       names= i,
-       color = i,
-       )
-    graph.show()
+# Who shot first?
+chart2 = px.histogram(data,
+    y = "shot_first",
+    title = "Who Shot First?"
+)
+chart2.show()
 ```
 
-_include figures in chunks and discuss your findings in the figure._
+## QUESTION|TASK 4
+
+__Build a machine learning model that predicts whether a person makes more than $50k. Describe your model and report the accuracy.__
 
 ```{python}
-#| label: Q3-chart
-#| code-summary: plot example
-#| fig-cap: "My useless chart"
-#| fig-align: center
-# Include and execute your code here
-# chart = px.bar(df.head(200),
-#     x="name", 
-#     y="AK"
-# )
-# chart.show()
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import BernoulliNB, CategoricalNB, ComplementNB, GaussianNB, MultinomialNB
+from sklearn.metrics import accuracy_score
+
+from sklearn import metrics
+import matplotlib.pyplot as plt
 ```
 
-
+I found through running graphs the columns that would make the best features. However, because I struggled with the one-hot encoding and the Star Trek fan column was unable to work.
 ```{python}
-#| label: Q3-table
-#| code-summary: table example
-#| tbl-cap: "Not much of a table"
-#| tbl-cap-location: top
-# Include and execute your code here
-# mydat = df.head(1000)\
-#     .groupby('year')\
-#     .sum()\
-#     .reset_index()\
-#     .tail(10)\
-#     .filter(["year", "AK","AR"])
+features = data.filter([
+    'age_range', 'education' #'SW6_ranked', 'Jar_Jar_Binks, ST_fan
+])
+targets = data.filter(['y'])
 
-# display(mydat)
+train_data, test_data, train_targets, test_targets = train_test_split(features, targets, test_size=0.3)
+print(test_data)
+#BernoulliNB, CategoricalNB, ComplementNB, GaussianNB, MultinomialNB
+classifier = CategoricalNB()
+classifier.fit(train_data, train_targets)
 
+targets_predicted = classifier.predict(test_data)
+accuracy = accuracy_score(test_targets, targets_predicted)
+print(accuracy)
+
+print(classifier.score(test_data, test_targets))
+
+confusion_matrix = metrics.confusion_matrix(test_targets, targets_predicted)
+cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix, display_labels = [False, True])
+cm_display.plot()
+plt.show()
 ```
+
+With only an accuracy score at 60-68%, this should still be considered successful since there is very other information that would link to income in a dataset designed to assess the _Star Wars_ fanbase. There were more false positives than I prefered (61/281 or roughly 1/5th) but this data is still somewhat effective.

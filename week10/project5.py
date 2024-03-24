@@ -178,7 +178,12 @@ del data_new['Income']
 print(data_new.filter(["Income_range"]))
 
 # Create your target (also known as “y” or “label”) column based on the new income range column.
-data_new['label'] = data_new.apply(lambda _: '', axis=1)
+def label_function(i):
+    if i.Income_range >= 4:
+        return True
+    else: 
+        return False
+data_new['y'] = data_new.apply(label_function, axis=1)
 
 # One-hot encode all remaining categorical columns.
 print(data_new.filter(['SW1_ranked','SW2_ranked','SW3_ranked','SW4_ranked','SW5_ranked','SW6_ranked']).head())
@@ -190,9 +195,9 @@ category_list = [
     'Luke_Skywalker','Princes_Leia','Anakin','Obi Wan','Palpatine','Darth_Vadar','Lando_Calrissian',
     'Boba_Fett','C-3PO','R2_D2','Jar_Jar_Binks','Padme_Amidala','Yoda',
 
-    'Seen_SW','Fan_of_SW','shot_first','familair_EU','ST_fan',
+    'Seen_SW','Fan_of_SW','familair_EU','ST_fan', #'shot_first'
 
-    'Gender','Location (Census Region)',
+    'Gender','Location (Census Region)'
                  ]
 
 enc = OneHotEncoder() 
@@ -212,31 +217,88 @@ Validate that the data provided on GitHub lines up with the article by recreatin
 # Which 'Star Wars' Movies Have You Seen?
 movies = ['SW1','SW2','SW3','SW4','SW5','SW6']
 #print(data.filter(['SW1_ranked','SW2_ranked','SW3_ranked','SW4_ranked','SW5_ranked','SW6_ranked']).head())
-#print(data.filter(['SW1','SW2','SW3','SW4','SW5','SW6']).head())
 
 movies_ranked = ['SW1_ranked','SW2_ranked','SW3_ranked','SW4_ranked','SW5_ranked','SW6_ranked']
 seen_all = data.query('SW1 == 0 and SW2 == 0 and SW3 == 0 and SW4 == 0 and SW5 == 0 and SW6 == 0')
-print(seen_all.filter(['SW1_ranked','SW2_ranked','SW3_ranked','SW4_ranked','SW5_ranked','SW6_ranked']).head())
 
 def SW_Movie_Seen(i):
 # Which of the following Star Wars films have you seen?
-    if i.SW1_ranked == 1:
+    if i.SW1_ranked == "1":
         return "SW1"
-    elif i.SW2_ranked == 1:
+    elif i.SW2_ranked == "1":
         return "SW2"
-    elif i.SW3_ranked == 1:
+    elif i.SW3_ranked == "1":
         return "SW3"    
-    elif i.SW4_ranked == 1:
+    elif i.SW4_ranked == "1":
         return "SW4"    
-    elif i.SW5_ranked == 1:
+    elif i.SW5_ranked == "1":
         return "SW5"
-    elif i.SW6_ranked == 1:
+    elif i.SW6_ranked == "1":
         return 'SW6'
 
 seen_all["SW_ranked"] = seen_all.apply(SW_Movie_Seen, axis=1)
-#print(New_df.filter(["SW_ranked"]))
 
 chart = px.histogram(seen_all,
-    x = "SW_ranked",
+    y = "SW_ranked",
+    category_orders=dict(SW_ranked=['SW1','SW2','SW3','SW4','SW5','SW6']),
+    title = "Which 'Star Wars' Movies Have You Seen?"
     )
-chart.show()
+#chart.show()
+
+# Who shot first?
+chart2 = px.histogram(data,
+    y = "shot_first",
+    title = "Who Shot First?"
+)
+#chart2.show()
+
+"""
+4. 
+Build a machine learning model that predicts whether a person makes 
+more than $50k. Describe your model and report the accuracy.
+"""
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import BernoulliNB, CategoricalNB, ComplementNB, GaussianNB, MultinomialNB
+from sklearn.metrics import accuracy_score
+
+from sklearn import metrics
+import matplotlib.pyplot as plt
+
+all_features = [
+'Fan_of_SW', 
+'SW1','SW2','SW3','SW4','SW5','SW6',
+'SW1_ranked','SW2_ranked','SW3_ranked','SW4_ranked','SW5_ranked','SW6_ranked',
+'Luke_Skywalker','Princes_Leia','Anakin','Obi Wan','Palpatine','Darth_Vadar','Lando_Calrissian','Boba_Fett','C-3PO','R2_D2','Jar_Jar_Binks','Padme_Amidala','Yoda',
+'familair_EU','ST_fan','Gender','Location (Census Region)',
+"age_range","education","Location (Census Region)",
+]
+for i in all_features:
+    chart = px.histogram(seen_all,
+    x= i,
+    facet_col = "y",
+    color= "age_range"
+    )
+    #chart.show()
+#print(data.filter(["ST_fan"]))
+
+features = data.filter([
+    'age_range', 'education', #"ST_fan" #'SW6_ranked', 'Jar_Jar_Binks, ST_fan
+])
+targets = data.filter(['y'])
+
+train_data, test_data, train_targets, test_targets = train_test_split(features, targets, test_size=0.3)
+print(test_data)
+#BernoulliNB, CategoricalNB, ComplementNB, GaussianNB, MultinomialNB
+classifier = CategoricalNB()
+classifier.fit(train_data, train_targets)
+
+targets_predicted = classifier.predict(test_data)
+accuracy = accuracy_score(test_targets, targets_predicted)
+print(accuracy)
+
+print(classifier.score(test_data, test_targets))
+
+confusion_matrix = metrics.confusion_matrix(test_targets, targets_predicted)
+cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix, display_labels = [False, True])
+cm_display.plot()
+plt.show()
